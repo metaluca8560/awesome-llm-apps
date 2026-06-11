@@ -87,7 +87,12 @@ def load_agent(api_key: str, knowledge: Knowledge, credentials_path: str) -> Age
               converted to speech. Expand only when the user asks for detail.
 
             CAPABILITIES:
-            1. Web search: use DuckDuckGo for current events, weather, facts.
+            1. Web search: for ANY question about current or real-world
+               information (weather, news, prices, sports, schedules, facts
+               you are unsure about), you MUST call the DuckDuckGo search
+               tool and answer with the actual information you found.
+               NEVER tell the user to check a website themselves - you do
+               the looking, then give the answer directly.
             2. Documents: search the knowledge base when the user asks about
                their uploaded files.
             3. Memory: you automatically remember user preferences and facts
