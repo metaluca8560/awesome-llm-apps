@@ -1,0 +1,13 @@
+# Root requirements for Streamlit Community Cloud deployment of the
+# Jarvis Voice Assistant (voice_ai_agents/jarvis_voice_assistant/).
+# Community Cloud reads dependency files from the repository root.
+streamlit
+agno>=2.2.10
+openai
+ddgs
+lancedb
+sqlalchemy
+pypdf
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib
