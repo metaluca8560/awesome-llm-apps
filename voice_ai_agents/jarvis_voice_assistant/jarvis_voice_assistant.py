@@ -8,8 +8,7 @@ from agno.agent import Agent
 from agno.db.sqlite import SqliteDb
 from agno.knowledge.embedder.openai import OpenAIEmbedder
 from agno.knowledge.knowledge import Knowledge
-from agno.models.openai import OpenAIChat
-from agno.tools.duckduckgo import DuckDuckGoTools
+from agno.models.openai import OpenAIResponses
 from agno.vectordb.lancedb import LanceDb, SearchType
 from openai import OpenAI
 
@@ -65,12 +64,14 @@ def build_optional_google_tools(credentials_path: str) -> list:
 
 def load_agent(api_key: str, knowledge: Knowledge, credentials_path: str) -> Agent:
     os.makedirs("tmp", exist_ok=True)
-    tools = [DuckDuckGoTools()]
+    # OpenAI's built-in web search runs server-side, so it works reliably
+    # from cloud hosts where scraping-based search tools get blocked.
+    tools: list = [{"type": "web_search_preview"}]
     tools.extend(build_optional_google_tools(credentials_path))
 
     return Agent(
         name="Jarvis",
-        model=OpenAIChat(id="gpt-4o", api_key=api_key),
+        model=OpenAIResponses(id="gpt-4o", api_key=api_key),
         tools=tools,
         knowledge=knowledge,
         search_knowledge=True,
@@ -89,7 +90,7 @@ def load_agent(api_key: str, knowledge: Knowledge, credentials_path: str) -> Age
             CAPABILITIES:
             1. Web search: for ANY question about current or real-world
                information (weather, news, prices, sports, schedules, facts
-               you are unsure about), you MUST call the DuckDuckGo search
+               you are unsure about), you MUST use your built-in web search
                tool and answer with the actual information you found.
                NEVER tell the user to check a website themselves - you do
                the looking, then give the answer directly.
