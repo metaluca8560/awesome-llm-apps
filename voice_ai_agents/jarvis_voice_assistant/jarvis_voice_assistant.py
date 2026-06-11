@@ -31,6 +31,17 @@ def init_session_state():
             st.session_state[key] = value
 
 
+def get_saved_api_key() -> str:
+    """Read the OpenAI key from Streamlit secrets or the environment."""
+    try:
+        key = st.secrets.get("OPENAI_API_KEY", "")
+        if key:
+            return key
+    except Exception:
+        pass
+    return os.getenv("OPENAI_API_KEY", "")
+
+
 def load_knowledge(api_key: str) -> Knowledge:
     return Knowledge(
         vector_db=LanceDb(
@@ -160,9 +171,14 @@ def main():
 
     with st.sidebar:
         st.title("🤖 Jarvis Settings")
-        api_key = st.text_input(
-            "OpenAI API Key", type="password", help="Used for the LLM, speech-to-text, and text-to-speech"
-        )
+        saved_key = get_saved_api_key()
+        if saved_key:
+            api_key = saved_key
+            st.success("🔑 Using the API key saved in app secrets")
+        else:
+            api_key = st.text_input(
+                "OpenAI API Key", type="password", help="Used for the LLM, speech-to-text, and text-to-speech"
+            )
 
         voices = ["alloy", "ash", "coral", "echo", "fable", "nova", "onyx", "sage", "shimmer"]
         st.session_state.selected_voice = st.selectbox(
