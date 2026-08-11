@@ -3,6 +3,7 @@ import hashlib
 import os
 import re
 import tempfile
+import urllib.parse
 from textwrap import dedent
 
 import streamlit as st
@@ -29,6 +30,7 @@ def init_session_state():
         "user_id": "default_user",
         "pending_images": [],
         "pending_videos": [],
+        "pending_errors": [],
         "conversation_mode": False,
         "mic_counter": 0,
         "quick_prompt": None,
@@ -76,25 +78,32 @@ def make_image_tool(api_key: str):
                 model="dall-e-3",
                 prompt=prompt,
                 size="1024x1024",
-                response_format="b64_json",
                 n=1,
             )
-            image_bytes = base64.b64decode(result.data[0].b64_json)
-            st.session_state.pending_images.append(image_bytes)
+            item = result.data[0]
+            # dall-e-3 returns a URL by default; fall back to base64 if given.
+            if getattr(item, "url", None):
+                st.session_state.pending_images.append(item.url)
+            elif getattr(item, "b64_json", None):
+                st.session_state.pending_images.append(base64.b64decode(item.b64_json))
+            else:
+                raise RuntimeError("No image data returned.")
             return "The image was generated and is now shown to the user. Briefly describe what you created."
         except Exception as e:
-            return f"Image generation failed: {e}"
+            st.session_state.pending_errors.append(f"🎨 Image generation failed: {e}")
+            return f"Image generation failed and the error was shown to the user: {e}"
 
     return generate_image
 
 
-def play_music(youtube_url: str) -> str:
+def play_music(youtube_url: str, song_title: str) -> str:
     """Play a song for the user by embedding its YouTube video. To use this,
     FIRST call your web search tool to find the official YouTube watch URL for
-    the requested song, then call this tool with that URL.
+    the requested song, then call this tool with that URL and the song's name.
 
     Args:
         youtube_url: A full YouTube link, e.g. https://www.youtube.com/watch?v=XXXXXXXXXXX
+        song_title: The song title and artist, used as a fallback search link.
     """
     match = re.search(r"(?:v=|youtu\.be/|embed/|shorts/)([\w-]{11})", youtube_url)
     video_id = match.group(1) if match else None
@@ -102,7 +111,7 @@ def play_music(youtube_url: str) -> str:
         video_id = youtube_url.strip()
     if not video_id:
         return "I need a valid YouTube link. Search the web for the song's YouTube URL first, then try again."
-    st.session_state.pending_videos.append(video_id)
+    st.session_state.pending_videos.append({"id": video_id, "title": song_title})
     return "The song is now playing below for the user. Confirm what you're playing."
 
 
@@ -168,9 +177,11 @@ def load_agent(api_key: str, knowledge: Knowledge, credentials_path: str) -> Age
                imagine a picture, call the generate_image tool. The image is
                shown to the user automatically - just describe it briefly.
             3. Music: when the user asks to play a song or music, FIRST use web
-               search to find the official YouTube watch URL for that song, then
-               call the play_music tool with that URL. The player appears
-               automatically - confirm what you're playing.
+               search to find a real YouTube watch URL for that song (prefer an
+               official audio, lyric, or "- Topic" upload, which are usually
+               embeddable), then call the play_music tool with that URL AND the
+               song title. The player and a backup link appear automatically -
+               confirm what you're playing.
             4. Documents: search the knowledge base when the user asks about
                their uploaded files.
             5. Memory: you automatically remember user preferences and facts
@@ -207,17 +218,31 @@ def synthesize_speech(client: OpenAI, text: str, voice: str) -> bytes:
     return response.content
 
 
-def render_media(images: list, videos: list):
-    """Render generated images and music players inside a chat message."""
-    for image_bytes in images:
-        st.image(image_bytes, use_container_width=True)
-    for video_id in videos:
-        st.video(f"https://www.youtube.com/watch?v={video_id}")
+def render_media(images: list, videos: list, errors: list = None):
+    """Render generated images, music players, and any tool errors."""
+    for err in errors or []:
+        st.error(err)
+    for image in images:
+        st.image(image, use_container_width=True)
+    for video in videos:
+        # Older history may store a bare id string; normalize to a dict.
+        if isinstance(video, str):
+            video = {"id": video, "title": ""}
+        video_id = video["id"]
+        title = video.get("title", "")
+        watch_url = f"https://www.youtube.com/watch?v={video_id}"
+        st.video(watch_url)
+        links = f"▶️ [Open in YouTube]({watch_url})"
+        if title:
+            search_url = "https://www.youtube.com/results?search_query=" + urllib.parse.quote(title)
+            links += f" · 🔎 [Search YouTube]({search_url})"
+        st.caption(f"{links} - if the player says *unavailable*, tap a link to play it.")
 
 
 def run_turn(agent: Agent, client: OpenAI, user_text: str):
     st.session_state.pending_images = []
     st.session_state.pending_videos = []
+    st.session_state.pending_errors = []
 
     st.session_state.messages.append({"role": "user", "content": user_text})
     with st.chat_message("user"):
@@ -231,7 +256,8 @@ def run_turn(agent: Agent, client: OpenAI, user_text: str):
 
         images = list(st.session_state.pending_images)
         videos = list(st.session_state.pending_videos)
-        render_media(images, videos)
+        errors = list(st.session_state.pending_errors)
+        render_media(images, videos, errors)
 
         with st.spinner("Generating voice..."):
             try:
@@ -254,6 +280,7 @@ def run_turn(agent: Agent, client: OpenAI, user_text: str):
     )
     st.session_state.pending_images = []
     st.session_state.pending_videos = []
+    st.session_state.pending_errors = []
 
 
 def main():
