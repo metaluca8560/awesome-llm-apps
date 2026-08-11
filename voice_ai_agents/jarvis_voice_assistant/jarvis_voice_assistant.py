@@ -31,6 +31,7 @@ def init_session_state():
         "pending_images": [],
         "pending_videos": [],
         "pending_errors": [],
+        "last_image_error": None,
         "conversation_mode": False,
         "mic_counter": 0,
         "quick_prompt": None,
@@ -88,9 +89,11 @@ def make_image_tool(api_key: str):
                 st.session_state.pending_images.append(base64.b64decode(item.b64_json))
             else:
                 raise RuntimeError("No image data returned.")
+            st.session_state.last_image_error = None
             return "The image was generated and is now shown to the user. Briefly describe what you created."
         except Exception as e:
             st.session_state.pending_errors.append(f"🎨 Image generation failed: {e}")
+            st.session_state.last_image_error = str(e)
             return f"Image generation failed and the error was shown to the user: {e}"
 
     return generate_image
@@ -334,6 +337,12 @@ def main():
         "Talk to Jarvis with your voice. It searches the web, generates images, "
         "plays music, remembers you, and reads your documents."
     )
+
+    if st.session_state.get("last_image_error"):
+        st.error(
+            f"🎨 Last image error: {st.session_state.last_image_error}",
+            icon="🚨",
+        )
 
     if not api_key:
         st.info("👈 Enter your OpenAI API key in the sidebar to wake Jarvis up.")
