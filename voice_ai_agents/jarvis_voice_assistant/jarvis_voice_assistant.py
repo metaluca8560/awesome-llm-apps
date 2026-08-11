@@ -26,7 +26,7 @@ def init_session_state():
         "messages": [],
         "processed_audio_hash": None,
         "processed_docs": set(),
-        "selected_voice": "echo",
+        "selected_voice": "onyx",
         "user_id": "default_user",
         "pending_images": [],
         "pending_videos": [],
