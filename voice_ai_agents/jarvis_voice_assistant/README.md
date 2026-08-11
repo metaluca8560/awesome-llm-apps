@@ -7,9 +7,13 @@ Built with [Agno](https://github.com/agno-agi/agno), Streamlit, and OpenAI.
 ### Features
 
 - **🎙️ Voice conversation**: Record with your mic in the browser; Jarvis transcribes with `gpt-4o-transcribe` and replies out loud with `gpt-4o-mini-tts` (9 selectable voices). Text chat works too.
-- **🌐 Web search**: Looks up current events, weather, and facts via DuckDuckGo - no extra API key needed.
+- **🔄 Conversation mode**: Toggle it on and the mic resets after every reply, so you can keep talking without clearing the previous recording.
+- **🌐 Web search**: Looks up current events, weather, prices, and facts with OpenAI's built-in web search (runs server-side, so it works even on cloud hosts).
+- **🎨 Image generation**: Ask Jarvis to draw or imagine anything and it generates the picture with DALL·E 3 and shows it inline.
+- **🎵 Music playback**: Ask for a song and Jarvis finds it on YouTube and embeds a player right in the chat.
 - **🧠 Long-term memory**: Automatically remembers your preferences and facts across sessions (stored in local SQLite, separate memories per user name).
 - **📄 Chat with your documents**: Upload PDFs and Jarvis indexes them into a local LanceDB vector store for hybrid-search RAG.
+- **⚡ Quick actions**: One-tap buttons for news, weather, exchange rate, and music.
 - **📅 Calendar & email (optional)**: Connect Google OAuth credentials to let Jarvis read your schedule and manage Gmail.
 - **🌍 Speaks your language**: Responds in whatever language you speak to it.
 
@@ -53,6 +57,8 @@ Leave the field empty to run Jarvis without these tools - everything else works 
 Each voice turn flows through four stages:
 
 1. **Listen**: The browser mic recording is transcribed by OpenAI `gpt-4o-transcribe`.
-2. **Think**: An Agno agent (GPT-4o) handles the request. It decides when to call tools - DuckDuckGo search, knowledge-base search over your uploaded PDFs, or Google Calendar/Gmail - and automatically extracts user memories into SQLite, carrying the last 5 turns as conversation context.
-3. **Speak**: The reply is synthesized with `gpt-4o-mini-tts` and auto-played in the browser.
+2. **Think**: An Agno agent (GPT-4o) handles the request. It decides when to call tools - web search, image generation, music lookup, knowledge-base search over your uploaded PDFs, or Google Calendar/Gmail - and automatically extracts user memories into SQLite, carrying the last 5 turns as conversation context.
+3. **Speak & show**: The reply is synthesized with `gpt-4o-mini-tts` and auto-played, while any generated image or music player is rendered inline in the chat.
 4. **Remember**: Conversation history, user memories, and document embeddings persist in the local `tmp/` directory between sessions.
+
+The dark theme is set in `.streamlit/config.toml` at the repository root (the location Streamlit Community Cloud reads).

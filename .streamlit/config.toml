@@ -1,0 +1,9 @@
+# Dark theme for the Jarvis Voice Assistant deployment.
+# Streamlit Community Cloud reads this from the repository root.
+[theme]
+base = "dark"
+primaryColor = "#29b6f6"
+backgroundColor = "#0e1117"
+secondaryBackgroundColor = "#1a1d24"
+textColor = "#fafafa"
+font = "sans serif"
