@@ -15,7 +15,7 @@ from agno.models.openai import OpenAIResponses
 from agno.vectordb.lancedb import LanceDb, SearchType
 from openai import OpenAI
 
-st.set_page_config(page_title="Jarvis Voice Assistant", page_icon="🤖", layout="wide")
+st.set_page_config(page_title="🤖 Jarvis - 뭐든지 물어보살", page_icon="🤖", layout="wide")
 
 DB_FILE = "tmp/jarvis.db"
 LANCEDB_URI = "tmp/jarvis_lancedb"
